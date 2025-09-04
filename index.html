@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Framework Interativo para Remediação de CSPM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutral Harmony -->
+    <!-- Application Structure Plan: A tabbed single-page application (SPA) was chosen to deconstruct the complex, multi-faceted topic of CSPM remediation into manageable, thematic sections. This structure avoids overwhelming the user with a long, scrolling document. The flow is designed to guide the user from foundational concepts (Strategies) to advanced implementation details (Pipeline, Metrics), mirroring a typical maturity journey. Key interactions include dynamic charts to visualize trade-offs, an interactive decision matrix to apply context, and toggleable content to explore specific patterns, making abstract concepts tangible and explorable. This user-centric design prioritizes clarity and guided learning over a literal representation of the source Q&A. -->
+    <!-- Visualization & Content Choices: 
+    - Remediation Strategies: Goal: Compare approaches. Viz: 3-column layout for direct comparison and a Bar Chart (Chart.js) to visualize the abstract trade-off between speed and safety. Interaction: Buttons to toggle chart view. Justification: Makes the core dilemma immediately understandable.
+    - Organizational Context: Goal: Demonstrate context-based decision making. Viz: Interactive HTML matrix. Interaction: Dropdown filters change matrix content. Justification: Transforms a complex decision tree into a simple, interactive tool.
+    - Pipeline vs. Policy: Goal: Illustrate the IaC drift problem and solution. Viz: 'Before/After' diagrams using HTML/Tailwind. Interaction: Toggles for exploring patterns. Justification: Visual storytelling is more effective than text for process-related problems.
+    - Metrics & Validation: Goal: Show how to measure success. Viz: Stat cards and a Line Chart (Chart.js). Interaction: Buttons to switch metrics on the chart. Justification: A dashboard-like view familiar to the target audience for tracking KPIs.
+    - All visualizations use Canvas via Chart.js or are constructed with HTML/CSS, adhering to the requirements.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8; /* Warm beige background */
+            color: #38342F; /* Dark brown-gray text */
+        }
+        .tab-button {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-button.active {
+            border-bottom-color: #D5A021; /* Muted gold accent */
+            color: #38342F;
+        }
+        .tab-button:not(.active) {
+            color: #7B7368; /* Lighter brown-gray for inactive tabs */
+        }
+        .card {
+            background-color: #FFFFFF;
+            border-radius: 0.75rem;
+            border: 1px solid #EFEBE6;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 40vh;
+        }
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 300px;
+            }
+        }
+        .decision-matrix td {
+            transition: background-color 0.3s ease;
+        }
+        .gemini-output {
+            background-color: #F9FAFB;
+            border: 1px solid #E5E7EB;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .gemini-output pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .gemini-output code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #3498db;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 1rem auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="container mx-auto px-4 py-8 md:py-12">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 tracking-tight">Framework Interativo para Remediação de CSPM</h1>
+            <p class="mt-2 text-lg text-gray-600 max-w-3xl mx-auto">Equilibrando Segurança e Disponibilidade em Ambientes de Produção</p>
+        </header>
+
+        <div class="card p-4 mb-8">
+            <nav id="tabs" class="flex flex-wrap justify-center items-center gap-4 md:gap-8 border-b border-gray-200">
+                <button data-tab="strategies" class="tab-button active py-3 px-2 text-sm md:text-base font-semibold">Estratégias</button>
+                <button data-tab="context" class="tab-button py-3 px-2 text-sm md:text-base font-semibold">Contexto</button>
+                <button data-tab="pipeline" class="tab-button py-3 px-2 text-sm md:text-base font-semibold">Pipeline</button>
+                <button data-tab="metrics" class="tab-button py-3 px-2 text-sm md:text-base font-semibold">Métricas</button>
+                <button data-tab="research" class="tab-button py-3 px-2 text-sm md:text-base font-semibold">Pesquisa ✨</button>
+            </nav>
+        </div>
+
+        <main id="tab-content">
+            <div id="strategies-content" class="tab-panel space-y-8">
+                <div class="card p-6 md:p-8">
+                    <h2 class="text-2xl font-bold mb-2">Quando e Como Remediar?</h2>
+                    <p class="text-gray-600 mb-6">A escolha do tipo de controle é um trade-off fundamental. Controles preventivos oferecem a maior segurança, mas podem impactar a agilidade. Controles detectivos com auto-remediação equilibram velocidade e segurança, enquanto a criação de tickets é a opção mais segura para a disponibilidade, mas a mais lenta para a remediação.</p>
+                    <div class="grid md:grid-cols-3 gap-6 text-center">
+                        <div class="border border-gray-200 rounded-lg p-6">
+                             <div class="text-4xl mb-2">🛡️</div>
+                             <h3 class="font-bold text-lg mb-2">Controles Preventivos</h3>
+                             <p class="text-sm text-gray-600"><strong>Exemplo:</strong> AWS SCPs, Azure Policy (deny).<br><strong>Ideal para:</strong> Violações de alto risco, inegociáveis (ex: S3 buckets públicos, portas de gerenciamento abertas para 0.0.0.0).<br><strong>Vantagem:</strong> Impede a má configuração de acontecer.</p>
+                        </div>
+                        <div class="border border-blue-200 bg-blue-50 rounded-lg p-6 ring-2 ring-blue-300">
+                            <div class="text-4xl mb-2">🤖</div>
+                            <h3 class="font-bold text-lg mb-2">Detectivo + Auto-Remediação</h3>
+                            <p class="text-sm text-gray-600"><strong>Exemplo:</strong> Lambda/Function que remove regra de firewall insegura.<br><strong>Ideal para:</strong> Riscos conhecidos e com caminho de remediação seguro e testado (ex: desabilitar acesso público a snapshots de DB).<br><strong>Vantagem:</strong> Resposta rápida a desvios de postura.</p>
+                        </div>
+                        <div class="border border-gray-200 rounded-lg p-6">
+                            <div class="text-4xl mb-2">🎟️</div>
+                            <h3 class="font-bold text-lg mb-2">Detectivo + Ticket/Aprovação</h3>
+                            <p class="text-sm text-gray-600"><strong>Exemplo:</strong> Alerta no PagerDuty para time de SRE.<br><strong>Ideal para:</strong> Configurações complexas, sensíveis ou com alto risco de impacto na disponibilidade se a remediação for incorreta (ex: alteração em regras de rede de um sistema crítico).<br><strong>Vantagem:</strong> Análise humana previne indisponibilidade.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card p-6 md:p-8">
+                    <h2 class="text-2xl font-bold mb-2">Visualizando o Trade-Off</h2>
+                    <p class="text-gray-600 mb-6">A eficácia de uma estratégia de remediação pode ser vista como um balanço entre a velocidade da correção de segurança e o risco para a disponibilidade do serviço. Interaja com o gráfico para ver como cada abordagem se posiciona.</p>
+                    <div class="chart-container">
+                        <canvas id="tradeoffChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="card p-6 md:p-8">
+                    <h2 class="text-2xl font-bold mb-2">Padrões de Rollout de Políticas (Enforcement)</h2>
+                    <p class="text-gray-600 mb-6">Antes de aplicar uma política de remediação globalmente, organizações maduras utilizam padrões de rollout faseado para minimizar o risco de indisponibilidade em larga escala. Essa abordagem permite validar o impacto da remediação de forma controlada.</p>
+                    <div class="relative pl-8 border-l-2 border-gray-200 space-y-10">
+                        <div class="absolute w-4 h-4 bg-yellow-400 rounded-full -left-2 top-1 border-4 border-white"></div>
+                        <div>
+                            <h3 class="font-bold text-lg">Fase 1: Período de Carência (Grace Period)</h3>
+                            <p class="text-gray-600 mt-1">Recursos não conformes são apenas notificados, sem ação de remediação. Isso dá tempo aos times de engenharia para se adaptarem à nova política e corrigirem suas configurações proativamente via IaC, antes que o enforcement automático comece.</p>
+                        </div>
+                        <div class="absolute w-4 h-4 bg-orange-400 rounded-full -left-2 top-1/2 -translate-y-1/2 border-4 border-white"></div>
+                        <div>
+                            <h3 class="font-bold text-lg">Fase 2: Remediação Canário (Canary Remediation)</h3>
+                            <p class="text-gray-600 mt-1">A auto-remediação é ativada apenas para um escopo limitado e de baixo risco (ex: contas de desenvolvimento, um workload não crítico). Métricas de disponibilidade e falhas são monitoradas de perto para validar a segurança da automação.</p>
+                        </div>
+                        <div class="absolute w-4 h-4 bg-green-500 rounded-full -left-2 bottom-1 border-4 border-white"></div>
+                        <div>
+                            <h3 class="font-bold text-lg">Fase 3: Enforcement Global</h3>
+                            <p class="text-gray-600 mt-1">Após validação nas fases anteriores, a política de auto-remediação é aplicada a todos os ambientes, incluindo produção. A automação agora atua como uma salvaguarda constante para a postura de segurança da nuvem.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="context-content" class="tab-panel hidden space-y-8">
+                <div class="card p-6 md:p-8">
+                    <h2 class="text-2xl font-bold mb-2">Matriz de Decisão de Remediação</h2>
+                    <p class="text-gray-600 mb-6">A decisão de remediar automaticamente não deve ser binária. Ela depende do contexto do negócio. Fatores como a criticidade do sistema, a sensibilidade dos dados e as obrigações regulatórias devem modular a abordagem. Use o seletor abaixo para ver como diferentes contextos regulatórios podem alterar a estratégia de remediação recomendada.</p>
+                    
+                    <div class="mb-6">
+                        <label for="compliance-filter" class="block text-sm font-medium text-gray-700 mb-1">Contexto Regulatório:</label>
+                        <select id="compliance-filter" class="w-full md:w-1/3 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="none" selected>Nenhum (Padrão)</option>
+                            <option value="lgpd">LGPD (Dados Pessoais)</option>
+                            <option value="pci">PCI-DSS (Cartão de Crédito)</option>
+                        </select>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse text-sm text-center decision-matrix">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="p-3 font-semibold border" rowspan="2" id="matrix-asset-criticality">Criticidade do Ativo</th>
+                                    <th class="p-3 font-semibold border" colspan="3" id="matrix-data-sensitivity">Sensibilidade dos Dados</th>
+                                </tr>
+                                <tr class="bg-gray-50">
+                                    <th class="p-3 font-semibold border">Público</th>
+                                    <th class="p-3 font-semibold border">Interno</th>
+                                    <th class="p-3 font-semibold border">Confidencial / Regulado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="p-3 font-semibold border">Tier 3 (Baixa)</td>
+                                    <td data-row="low" data-col="public" class="p-3 border">Auto-Remediação</td>
+                                    <td data-row="low" data-col="internal" class="p-3 border">Auto-Remediação</td>
+                                    <td data-row="low" data-col="confidential" class="p-3 border">Auto-Remediação</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-semibold border">Tier 2 (Média)</td>
+                                    <td data-row="medium" data-col="public" class="p-3 border">Auto-Remediação</td>
+                                    <td data-row="medium" data-col="internal" class="p-3 border">Ticket com SLA Curto</td>
+                                    <td data-row="medium" data-col="confidential" class="p-3 border">Ticket com SLA Curto</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-semibold border">Tier 1 (Crítico)</td>
+                                    <td data-row="high" data-col="public" class="p-3 border">Ticket com SLA Curto</td>
+                                    <td data-row="high" data-col="internal" class="p-3 border">Ticket com Aprovação</td>
+                                    <td data-row="high" data-col="confidential" class="p-3 border">Ticket com Aprovação</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                     <div class="mt-6 text-center">
+                        <button id="explainRiskBtn" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors">✨ Explicar Risco e Estratégia</button>
+                    </div>
+                    <div id="riskExplanationOutput" class="gemini-output hidden"></div>
+                </div>
+            </div>
+
+            <div id="pipeline-content" class="tab-panel hidden space-y-8">
+                <div class="card p-6 md:p-8">
+                     <h2 class="text-2xl font-bold mb-2">Resolvendo o Conflito "Pipeline vs. Política"</h2>
+                    <p class="text-gray-600 mb-6">Um desafio comum é o "drift" de IaC. Uma remediação automática corrige um recurso na nuvem, mas na próxima execução do pipeline de CI/CD, o código-fonte (ex: Terraform) que ainda contém a má configuração é reaplicado, desfazendo a correção e causando um ciclo de conflito que pode levar à indisponibilidade.</p>
+
+                    <div class="grid md:grid-cols-2 gap-8 items-start">
+                        <div>
+                            <h3 class="font-bold text-lg text-red-600 mb-2">❌ Abordagem Problemática: Remediação Cega</h3>
+                            <div class="text-sm border-l-4 border-red-500 pl-4 py-2 bg-red-50">
+                                <p><strong>1. Pipeline:</strong> Deploy de bucket S3 público via Terraform.</p>
+                                <p><strong>2. CSPM:</strong> Detecta e auto-remedia, tornando o bucket privado.</p>
+                                <p><strong>3. Conflito:</strong> Aplicação quebra por não acessar o bucket.</p>
+                                <p><strong>4. Próximo Deploy:</strong> Pipeline reaplica o Terraform, bucket volta a ser público.</p>
+                                <p class="font-semibold mt-2">Resultado: Loop de correção e quebra.</p>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg text-green-600 mb-2">✅ Padrão Recomendado: Remediação Ciente do Pipeline</h3>
+                             <div class="text-sm border-l-4 border-green-500 pl-4 py-2 bg-green-50">
+                                <p><strong>1. CSPM:</strong> Detecta bucket público.</p>
+                                <p><strong>2. Ação:</strong> Em vez de alterar o recurso, uma automação abre um Pull Request (PR) no repositório Git com a correção no código Terraform.</p>
+                                <p><strong>3. Pipeline:</strong> O PR passa por testes e aprovação humana.</p>
+                                <p><strong>4. Deploy:</strong> O pipeline aplica a correção de forma segura e persistente.</p>
+                                <p class="font-semibold mt-2">Resultado: Fonte da verdade é corrigida, evitando drift.</p>
+                            </div>
+                            <div class="mt-4 text-left">
+                                <button id="generateFixBtn" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">✨ Gerar Sugestão de Correção (IaC)</button>
+                            </div>
+                        </div>
+                    </div>
+                     <div id="iacFixOutput" class="gemini-output hidden"></div>
+                </div>
+                <div class="card p-6 md:p-8">
+                    <h2 class="text-2xl font-bold mb-2">Gestão de Exceções e Policy-as-Code</h2>
+                    <p class="text-gray-600 mb-6">Uma estratégia de enforcement realista requer um processo formal para gerenciar exceções e a integração de checagens de política o mais cedo possível no ciclo de vida de desenvolvimento ("shift-left").</p>
+                    <div class="space-y-4">
+                        <div class="border rounded-lg p-4">
+                            <h3 class="font-semibold">📜 Gestão de Exceções (Waivers)</h3>
+                            <p class="text-sm text-gray-600 mt-1">Exceções devem ser raras, documentadas e com tempo de vida limitado (TTL). Padrões comuns incluem o uso de tags específicas (ex: `security-waiver-exp=2025-12-31`) que a automação de CSPM pode ignorar temporariamente.</p>
+                        </div>
+                        <div class="border rounded-lg p-4">
+                            <h3 class="font-semibold">🚦 Policy-as-Code (PaC)</h3>
+                            <p class="text-sm text-gray-600 mt-1">Integrar ferramentas como OPA, Checkov ou tfsec no pipeline de CI/CD. Essas ferramentas analisam o código IaC em busca de não conformidades antes do merge do PR (pré-merge checks), impedindo que a má configuração chegue à produção. Isso transforma a segurança de um gate reativo para um feedback proativo ao desenvolvedor.</p>
+                        </div>
+                         <div class="border rounded-lg p-4">
+                            <h3 class="font-semibold">🚨 Kill Switches / Feature Flags</h3>
+                            <p class="text-sm text-gray-600 mt-1">Toda automação de remediação crítica deve ter um "kill switch" – um mecanismo de emergência para desabilitá-la rapidamente em caso de comportamento inesperado que cause indisponibilidade generalizada. Isso pode ser implementado via feature flags ou variáveis de configuração.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="metrics-content" class="tab-panel hidden space-y-8">
+                <div class="card p-6 md:p-8">
+                    <h2 class="text-2xl font-bold mb-2">Medindo a Eficácia</h2>
+                    <p class="text-gray-600 mb-6">A eficácia de uma estratégia de remediação é demonstrada por um conjunto de métricas de resultado, não apenas de atividade. O objetivo é provar que a segurança está melhorando sem degradar a estabilidade e a velocidade da engenharia.</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="text-3xl font-bold text-blue-600" id="mttr-value"></div>
+                            <p class="text-sm font-medium text-gray-600">MTTR de Misconfigurations (horas)</p>
+                        </div>
+                         <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="text-3xl font-bold text-green-600" id="drift-value"></div>
+                            <p class="text-sm font-medium text-gray-600">% de Drift (IaC vs. Realidade)</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="text-3xl font-bold text-red-600" id="failure-rate-value"></div>
+                            <p class="text-sm font-medium text-gray-600">Change Failure Rate (%)</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="text-3xl font-bold text-orange-600" id="outage-value"></div>
+                            <p class="text-sm font-medium text-gray-600">Incidentes de Indisponibilidade por Remediação</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card p-6 md:p-8">
+                    <h2 class="text-2xl font-bold mb-2">Evolução das Métricas ao Longo do Tempo</h2>
+                    <p class="text-gray-600 mb-6">À medida que a estratégia de remediação amadurece, espera-se que o tempo para remediar (MTTR) caia drasticamente, enquanto métricas de estabilidade, como a taxa de falha de mudanças, permaneçam baixas, indicando que a automação é segura.</p>
+                    <div class="chart-container">
+                        <canvas id="metricsChart"></canvas>
+                    </div>
+                    <div class="text-center mt-4">
+                        <button id="updateMetricsBtn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">Simular Evolução</button>
+                    </div>
+                </div>
+                
+                 <div class="card p-6 md:p-8">
+                    <h2 class="text-2xl font-bold mb-2">Validação Empírica</h2>
+                    <p class="text-gray-600 mb-6">Antes de um rollout global, como validar que uma nova regra de auto-remediação é segura? A experimentação controlada é a chave. Use feature toggles para ativar a remediação para uma pequena porcentagem do tráfego ou para um conjunto específico de recursos. Monitore de perto as métricas de negócio e operacionais (SLOs, latência, erros) desse grupo de controle em comparação com a linha de base. Se não houver degradação, a confiança para expandir o rollout aumenta.</p>
+                 </div>
+            </div>
+            
+            <div id="research-content" class="tab-panel hidden space-y-8">
+                <div class="card p-6 md:p-8">
+                    <h2 class="text-2xl font-bold mb-2">✨ Pesquisa e Benchmarks com IA</h2>
+                    <p class="text-gray-600 mb-6">Mantenha-se atualizado com as últimas tendências, pesquisas e benchmarks da indústria. Faça uma pergunta sobre remediação de CSPM, CNAPP ou automação de segurança, e a IA usará a busca do Google para encontrar as informações mais recentes e relevantes para você.</p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input type="text" id="researchQueryInput" class="flex-grow rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Ex: quais são os benchmarks de MTTR para misconfigurations?">
+                        <button id="researchQueryBtn" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors w-full sm:w-auto">Pesquisar</button>
+                    </div>
+                    
+                    <div id="researchQueryOutput" class="gemini-output hidden"></div>
+                </div>
+            </div>
+
+        </main>
+        <div id="loader" class="loader hidden"></div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const tabs = document.querySelectorAll('.tab-button');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+    const loader = document.getElementById('loader');
+
+    // Tab navigation logic
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            const targetTab = tab.getAttribute('data-tab');
+            tabPanels.forEach(panel => {
+                panel.id === `${targetTab}-content` ? panel.classList.remove('hidden') : panel.classList.add('hidden');
+            });
+        });
+    });
+
+    // Gemini API call function with exponential backoff
+    async function callGeminiAPI(prompt, useGrounding = false, maxRetries = 3) {
+        loader.classList.remove('hidden');
+        const apiKey = "";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+        
+        const payload = {
+            contents: [{ parts: [{ text: prompt }] }],
+        };
+
+        if (useGrounding) {
+            payload.tools = [{ "google_search": {} }];
+        }
+
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const candidate = result.candidates?.[0];
+
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    let sources = [];
+                    if (useGrounding) {
+                        const groundingMetadata = candidate.groundingMetadata;
+                        if (groundingMetadata && groundingMetadata.groundingAttributions) {
+                            sources = groundingMetadata.groundingAttributions
+                                .map(attr => ({ uri: attr.web?.uri, title: attr.web?.title }))
+                                .filter(source => source.uri && source.title);
+                        }
+                    }
+                    loader.classList.add('hidden');
+                    return { text: candidate.content.parts[0].text, sources };
+                } else {
+                    throw new Error('Invalid response structure from Gemini API');
+                }
+            } catch (error) {
+                console.error(`Attempt ${i + 1} failed:`, error);
+                if (i === maxRetries - 1) {
+                    loader.classList.add('hidden');
+                    return { text: "Desculpe, ocorreu um erro ao contatar a IA. Por favor, tente novamente mais tarde.", sources: [] };
+                }
+                await new Promise(res => setTimeout(res, Math.pow(2, i) * 1000));
+            }
+        }
+    }
+
+    // IaC Fix Generation
+    const generateFixBtn = document.getElementById('generateFixBtn');
+    const iacFixOutput = document.getElementById('iacFixOutput');
+    generateFixBtn.addEventListener('click', async () => {
+        iacFixOutput.classList.remove('hidden');
+        iacFixOutput.innerHTML = '';
+        const prompt = `Como um especialista em segurança em nuvem e DevOps, gere um snippet de código Terraform HCL para corrigir um recurso 'aws_s3_bucket' que está configurado como público. Mostre o 'antes' e o 'depois'. O 'antes' deve ter 'acl = "public-read"'. O 'depois' deve usar um recurso 'aws_s3_bucket_public_access_block' para garantir que o bucket seja privado. Formate a saída como blocos de código HCL dentro de markdown.`;
+        const { text } = await callGeminiAPI(prompt);
+        iacFixOutput.innerHTML = `<pre><code class="language-hcl">${text.replace(/```hcl\n|```/g, '').trim()}</code></pre>`;
+    });
+
+    // Risk Explanation Generation
+    const explainRiskBtn = document.getElementById('explainRiskBtn');
+    const riskExplanationOutput = document.getElementById('riskExplanationOutput');
+    const complianceFilter = document.getElementById('compliance-filter');
+    explainRiskBtn.addEventListener('click', async () => {
+        riskExplanationOutput.classList.remove('hidden');
+        riskExplanationOutput.innerHTML = '';
+
+        const selectedCompliance = complianceFilter.options[complianceFilter.selectedIndex].text;
+        const matrixHeaders = Array.from(document.querySelectorAll('.decision-matrix th'));
+        const matrixCells = Array.from(document.querySelectorAll('.decision-matrix td[data-row]'));
+
+        // This is a simplified way to get the context. A real app might have users click a cell.
+        // For this demo, we'll pick a representative scenario.
+        const criticality = "Tier 1 (Crítico)";
+        const sensitivity = "Confidencial / Regulado";
+        const strategy = "Ticket com Aprovação";
+        
+        const prompt = `Explique em um parágrafo conciso o risco de negócio e a justificativa para a estratégia de remediação, considerando o seguinte contexto:\n- Criticidade do Ativo: ${criticality}\n- Sensibilidade dos Dados: ${sensitivity}\n- Framework Regulatório: ${selectedCompliance}\n- Estratégia de Remediação Recomendada: ${strategy}\n\nA resposta deve ser clara, direta e focada no impacto para o negócio.`;
+        
+        const { text } = await callGeminiAPI(prompt);
+        riskExplanationOutput.textContent = text;
+    });
+
+    // Research Query
+    const researchQueryBtn = document.getElementById('researchQueryBtn');
+    const researchQueryInput = document.getElementById('researchQueryInput');
+    const researchQueryOutput = document.getElementById('researchQueryOutput');
+    researchQueryBtn.addEventListener('click', async () => {
+        const query = researchQueryInput.value;
+        if (!query) {
+            alert('Por favor, insira uma pergunta.');
+            return;
+        }
+        researchQueryOutput.classList.remove('hidden');
+        researchQueryOutput.innerHTML = '';
+        const prompt = `Atuando como um analista de cibersegurança, responda à seguinte pergunta sobre CSPM e segurança em nuvem, usando informações atualizadas da web: "${query}"`;
+        
+        const { text, sources } = await callGeminiAPI(prompt, true);
+        
+        let sourcesHtml = '';
+        if (sources.length > 0) {
+            sourcesHtml = '<h4 class="font-semibold mt-4 mb-2">Fontes:</h4><ul class="list-disc pl-5 text-sm">';
+            sources.forEach(source => {
+                sourcesHtml += `<li><a href="${source.uri}" target="_blank" class="text-blue-600 hover:underline">${source.title}</a></li>`;
+            });
+            sourcesHtml += '</ul>';
+        }
+
+        researchQueryOutput.innerHTML = `<p>${text}</p>${sourcesHtml}`;
+    });
+    
+    // Charts and initial setup code (from previous version)
+    const ctxTradeoff = document.getElementById('tradeoffChart').getContext('2d');
+    new Chart(ctxTradeoff, {
+        type: 'bar',
+        data: {
+            labels: ['Preventivo', 'Auto-Remediação', 'Ticket/Manual'],
+            datasets: [{
+                label: 'Velocidade de Remediação',
+                data: [100, 80, 20],
+                backgroundColor: 'rgba(59, 130, 246, 0.7)',
+            }, {
+                label: 'Segurança da Disponibilidade',
+                data: [60, 85, 100],
+                backgroundColor: 'rgba(16, 185, 129, 0.7)',
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, max: 110, ticks: { callback: (v) => v + '%' }}},
+            plugins: { title: { display: true, text: 'Trade-off: Velocidade vs. Segurança da Disponibilidade' }}
+        }
+    });
+
+    const matrixCells = document.querySelectorAll('.decision-matrix td[data-row]');
+    const decisionLogic = {
+        none: { low: { public: 'Auto-Remediação', internal: 'Auto-Remediação', confidential: 'Auto-Remediação' }, medium: { public: 'Auto-Remediação', internal: 'Ticket SLA Curto', confidential: 'Ticket SLA Curto' }, high: { public: 'Ticket SLA Curto', internal: 'Ticket com Aprovação', confidential: 'Ticket com Aprovação' }},
+        lgpd: { low: { public: 'Auto-Remediação', internal: 'Auto-Remediação', confidential: 'Auto-Remediação' }, medium: { public: 'Auto-Remediação', internal: 'Auto-Remediação', confidential: 'Ticket SLA Curto' }, high: { public: 'Ticket SLA Curto', internal: 'Ticket com Aprovação', confidential: 'Auto-Remediação (Bloqueio)' }},
+        pci: { low: { public: 'Auto-Remediação', internal: 'Auto-Remediação', confidential: 'Auto-Remediação' }, medium: { public: 'Auto-Remediação', internal: 'Auto-Remediação', confidential: 'Auto-Remediação (Bloqueio)' }, high: { public: 'Ticket com Aprovação', internal: 'Auto-Remediação (Bloqueio)', confidential: 'Auto-Remediação (Bloqueio)' }}
+    };
+    const colors = { 'Auto-Remediação': 'bg-green-100 text-green-800', 'Auto-Remediação (Bloqueio)': 'bg-red-200 text-red-900 font-bold', 'Ticket SLA Curto': 'bg-yellow-100 text-yellow-800', 'Ticket com Aprovação': 'bg-orange-100 text-orange-800' };
+    function updateMatrix() {
+        const logic = decisionLogic[complianceFilter.value];
+        matrixCells.forEach(cell => {
+            const text = logic[cell.dataset.row][cell.dataset.col];
+            cell.textContent = text;
+            cell.className = 'p-3 border ' + (colors[text] || '');
+        });
+    }
+    complianceFilter.addEventListener('change', updateMatrix);
+    updateMatrix();
+
+    const mttrEl = document.getElementById('mttr-value'), driftEl = document.getElementById('drift-value'), failureRateEl = document.getElementById('failure-rate-value'), outageEl = document.getElementById('outage-value');
+    let mttr = 48, drift = 15, failureRate = 3.5, outages = 5;
+    function animateValue(el, start, end, duration) { let s=null; const step=(t)=>{ if(!s)s=t; const p=Math.min((t-s)/duration,1); const c=start+p*(end-start); el.innerHTML = el.id==='failure-rate-value'?c.toFixed(1):Math.floor(c); if(p<1)window.requestAnimationFrame(step);}; window.requestAnimationFrame(step); }
+    animateValue(mttrEl, 0, mttr, 1000); animateValue(driftEl, 0, drift, 1000); animateValue(failureRateEl, 0, failureRate, 1000); animateValue(outageEl, 0, outages, 1000);
+
+    const ctxMetrics = document.getElementById('metricsChart').getContext('2d');
+    const metricsChart = new Chart(ctxMetrics, {
+        type: 'line',
+        data: { labels: ['Q1', 'Q2', 'Q3', 'Q4'], datasets: [{ label: 'MTTR de Misconfigurations (h)', data: [48, 24, 8, 2], borderColor: 'rgba(59, 130, 246, 1)', backgroundColor: 'rgba(59, 130, 246, 0.2)', fill: true, tension: 0.3 }, { label: 'Incidentes por Remediação', data: [5, 4, 1, 0], borderColor: 'rgba(239, 68, 68, 1)', backgroundColor: 'rgba(239, 68, 68, 0.2)', fill: true, tension: 0.3 }] },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true }}, plugins: { title: { display: true, text: 'Evolução das Métricas Chave' }}}
+    });
+
+    document.getElementById('updateMetricsBtn').addEventListener('click', () => {
+        metricsChart.data.datasets.forEach(d => { d.data = d.data.map(v => Math.max(0, v * (0.6 + Math.random() * 0.3)).toFixed(1)); });
+        metricsChart.update();
+        let nMttr = mttr * 0.4, nDrift = drift * 0.5, nFail = failureRate * 0.8, nOut = outages * 0.2;
+        animateValue(mttrEl, mttr, nMttr, 1000); animateValue(driftEl, drift, nDrift, 1000); animateValue(failureRateEl, failureRate, nFail, 1000); animateValue(outageEl, outages, nOut, 1000);
+        mttr=nMttr; drift=nDrift; failureRate=nFail; outages=nOut;
+    });
+});
+</script>
+</body>
+</html>
