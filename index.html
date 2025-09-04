@@ -145,20 +145,25 @@
                     <p class="text-gray-600 mb-6">Antes de aplicar uma política de remediação globalmente, organizações maduras utilizam padrões de rollout faseado para minimizar o risco de indisponibilidade em larga escala. Essa abordagem permite validar o impacto da remediação de forma controlada.</p>
                     <div class="relative pl-8 border-l-2 border-gray-200 space-y-10">
                         <div class="absolute w-4 h-4 bg-yellow-400 rounded-full -left-2 top-1 border-4 border-white"></div>
-                        <div>
-                            <h3 class="font-bold text-lg">Fase 1: Período de Carência (Grace Period)</h3>
-                            <p class="text-gray-600 mt-1">Recursos não conformes são apenas notificados, sem ação de remediação. Isso dá tempo aos times de engenharia para se adaptarem à nova política e corrigirem suas configurações proativamente via IaC, antes que o enforcement automático comece.</p>
-                        </div>
-                        <div class="absolute w-4 h-4 bg-orange-400 rounded-full -left-2 top-1/2 -translate-y-1/2 border-4 border-white"></div>
-                        <div>
-                            <h3 class="font-bold text-lg">Fase 2: Remediação Canário (Canary Remediation)</h3>
-                            <p class="text-gray-600 mt-1">A auto-remediação é ativada apenas para um escopo limitado e de baixo risco (ex: contas de desenvolvimento, um workload não crítico). Métricas de disponibilidade e falhas são monitoradas de perto para validar a segurança da automação.</p>
-                        </div>
+        <div>
+            <h3 class="font-bold text-lg">Fase 1: Período de Carência (Grace Period)</h3>
+            <p class="text-gray-600 mt-1">Recursos não conformes são apenas notificados, sem ação de remediação. Isso dá tempo aos times de engenharia para se adaptarem à nova política e corrigirem suas configurações proativamente via IaC, antes que o enforcement automático comece.</p>
+        </div>
+                        <div class="absolute w-4 h-4 bg-orange-400 rounded-full -left-2 border-4 border-white" style="top:33%"></div>
+        <div>
+            <h3 class="font-bold text-lg">Fase 2: Quarentena / Brownout</h3>
+            <p class="text-gray-600 mt-1">Recursos violadores são colocados em modo restrito – por exemplo, isolamento de rede ou remoção de acesso público – limitando o raio de impacto enquanto equipes avaliam a correção definitiva.</p>
+        </div>
+                        <div class="absolute w-4 h-4 bg-blue-400 rounded-full -left-2 border-4 border-white" style="top:66%"></div>
+        <div>
+            <h3 class="font-bold text-lg">Fase 3: Remediação Canário (Canary Remediation)</h3>
+            <p class="text-gray-600 mt-1">A auto-remediação é ativada apenas para um escopo limitado e de baixo risco (ex: contas de desenvolvimento, um workload não crítico). Métricas de disponibilidade e falhas são monitoradas de perto para validar a segurança da automação.</p>
+        </div>
                         <div class="absolute w-4 h-4 bg-green-500 rounded-full -left-2 bottom-1 border-4 border-white"></div>
-                        <div>
-                            <h3 class="font-bold text-lg">Fase 3: Enforcement Global</h3>
-                            <p class="text-gray-600 mt-1">Após validação nas fases anteriores, a política de auto-remediação é aplicada a todos os ambientes, incluindo produção. A automação agora atua como uma salvaguarda constante para a postura de segurança da nuvem.</p>
-                        </div>
+        <div>
+            <h3 class="font-bold text-lg">Fase 4: Enforcement Global</h3>
+            <p class="text-gray-600 mt-1">Após validação nas fases anteriores, a política de auto-remediação é aplicada a todos os ambientes, incluindo produção. A automação agora atua como uma salvaguarda constante para a postura de segurança da nuvem.</p>
+        </div>
                     </div>
                 </div>
             </div>
@@ -216,6 +221,29 @@
                         <button id="explainRiskBtn" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors">✨ Explicar Risco e Estratégia</button>
                     </div>
                     <div id="riskExplanationOutput" class="gemini-output hidden"></div>
+                </div>
+
+                <div class="card p-6 md:p-8">
+                    <h2 class="text-2xl font-bold mb-2">Considerações Especiais</h2>
+                    <p class="text-gray-600 mb-6">Ambientes multicloud e organizações do setor financeiro exigem ajustes adicionais na remediação automática para manter a consistência e atender requisitos regulatórios.</p>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="font-semibold text-lg mb-2">🌐 Multicloud</h3>
+                            <ul class="list-disc pl-5 text-sm text-gray-600 space-y-1">
+                                <li>Defina políticas unificadas que normalizem controles entre AWS, Azure e GCP.</li>
+                                <li>Orquestre automações a partir de um ponto central para evitar pontos cegos e drifts.</li>
+                                <li>Considere dependências entre nuvens antes de isolar ou alterar recursos.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-lg mb-2">🏦 Setor Financeiro</h3>
+                            <ul class="list-disc pl-5 text-sm text-gray-600 space-y-1">
+                                <li>Regulações como PCI-DSS e normas do BACEN favorecem controles preventivos e evidências de mudança.</li>
+                                <li>Processos de change management exigem integração com sistemas de ticket e aprovação humana.</li>
+                                <li>Classifique ativos e dados: workloads críticos podem requerer janelas específicas ou remediação manual.</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
 
