@@ -56,7 +56,7 @@
         <main id="tab-content">
             <div id="strategies-content" class="tab-panel space-y-8">
                 <div class="card p-6 md:p-8">
-                    <h2 class="text-2xl font-bold mb-4">Tipos de Controles: Preventivos vs. detectivos vs. Aprovação Manual</h2>
+                    <h2 class="text-2xl font-bold mb-4">Tipos de Controles: Preventivos vs. Detectivos vs. Aprovação Manual</h2>
                     <p class="text-gray-600 mb-6">A escolha do tipo de controle é um trade-off fundamental entre segurança, agilidade e disponibilidade. Organizações maduras combinam os três tipos conforme a severidade do controle e a criticidade do sistema envolvido.</p>
                     <div class="grid md:grid-cols-3 gap-6">
                         <div class="border border-gray-200 rounded-lg p-6 space-y-3">
@@ -67,13 +67,13 @@
                              <div class="text-xs font-semibold text-orange-700">⚠️ Cuidado: Podem impactar a agilidade se não forem bem calibrados.</div>
                         </div>
                         <div class="border border-blue-200 bg-blue-50 rounded-lg p-6 space-y-3">
-                            <div class="flex items-center gap-4"><span class="text-4xl">🤖</span><h3 class="font-bold text-lg">detectivo + Auto-Remediação</h3></div>
+                            <div class="flex items-center gap-4"><span class="text-4xl">🤖</span><h3 class="font-bold text-lg">Detectivo + Auto-Remediação</h3></div>
                             <p class="text-sm text-gray-600">A violação é permitida temporariamente, mas <strong>detectada e corrigida</strong> por automação em minutos (self-healing).</p>
                              <div class="text-xs bg-blue-100 p-3 rounded-md"><strong>Exemplos:</strong> Uma função Lambda que fecha automaticamente uma porta de firewall insegura após um breve período de carência.</div>
                              <div class="text-xs font-semibold text-green-700">✅ Ideal para riscos de gravidade média a alta, com caminho de remediação seguro. Equilibra agilidade e segurança.</div>
                         </div>
                         <div class="border border-gray-200 rounded-lg p-6 space-y-3">
-                            <div class="flex items-center gap-4"><span class="text-4xl">🎟️</span><h3 class="font-bold text-lg">detectivo + Processo Manual</h3></div>
+                            <div class="flex items-center gap-4"><span class="text-4xl">🎟️</span><h3 class="font-bold text-lg">Detectivo + Processo Manual</h3></div>
                             <p class="text-sm text-gray-600">A não conformidade gera um <strong>alerta, ticket ou requer aprovação humana</strong>. A remediação é manual, seguindo um SLA.</p>
                             <div class="text-xs bg-gray-50 p-3 rounded-md"><strong>Exemplos:</strong> Alerta no PagerDuty para SRE analisar uma alteração complexa em um banco de dados de produção.</div>
                              <div class="text-xs font-semibold text-green-700">✅ Necessário para configurações complexas, onde a automação é arriscada, ou em culturas com controle de mudança rígido.</div>
